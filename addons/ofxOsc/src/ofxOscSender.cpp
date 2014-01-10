@@ -95,7 +95,6 @@ void ofxOscSender::sendMessage( ofxOscMessage& message )
 }
 
 void ofxOscSender::sendParameter( const ofAbstractParameter & parameter){
-	if(!parameter.isSerializable()) return;
 	if(parameter.type()==typeid(ofParameterGroup).name()){
 		string address = "/";
 		const vector<string> hierarchy = parameter.getGroupHierarchyNames();
@@ -125,22 +124,18 @@ void ofxOscSender::appendParameter( ofxOscBundle & _bundle, const ofAbstractPara
 		const ofParameterGroup & group = static_cast<const ofParameterGroup &>(parameter);
 		for(int i=0;i<group.size();i++){
 			const ofAbstractParameter & p = group[i];
-			if(p.isSerializable()){
-				appendParameter(bundle,p,address+group.getEscapedName()+"/");
-			}
+			appendParameter(bundle,p,address+group.getName()+"/");
 		}
 		_bundle.addBundle(bundle);
 	}else{
-		if(parameter.isSerializable()){
-			ofxOscMessage msg;
-			appendParameter(msg,parameter,address);
-			_bundle.addMessage(msg);
-		}
+		ofxOscMessage msg;
+		appendParameter(msg,parameter,address);
+		_bundle.addMessage(msg);
 	}
 }
 
 void ofxOscSender::appendParameter( ofxOscMessage & msg, const ofAbstractParameter & parameter, string address){
-	msg.setAddress(address+parameter.getEscapedName());
+	msg.setAddress(address+parameter.getName());
 	if(parameter.type()==typeid(ofParameter<int>).name()){
 		msg.addIntArg(parameter.cast<int>());
 	}else if(parameter.type()==typeid(ofParameter<float>).name()){

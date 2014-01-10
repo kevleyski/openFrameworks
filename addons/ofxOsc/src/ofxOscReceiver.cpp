@@ -39,7 +39,7 @@ ofxOscReceiver::ofxOscReceiver()
 	listen_socket = NULL;
 }
 
-void ofxOscReceiver::setup( int listen_port )
+void ofxOscReceiver::setup( int listen_port, bool allowReuse )
 {
 	// if we're already running, shutdown before running again
 	if ( listen_socket )
@@ -55,6 +55,7 @@ void ofxOscReceiver::setup( int listen_port )
 	// create socket
 	socketHasShutdown = false;
 	listen_socket = new UdpListeningReceiveSocket( IpEndpointName( IpEndpointName::ANY_ADDRESS, listen_port ), this );
+	setAllowReuse(allowReuse);
 
 	// start thread
 	#ifdef TARGET_WIN32
@@ -101,6 +102,10 @@ void ofxOscReceiver::shutdown()
 		delete listen_socket;
 		listen_socket = NULL;
 	}
+}
+
+void ofxOscReceiver::setAllowReuse(bool allowReuse){
+	listen_socket->SetAllowReuse(allowReuse);
 }
 
 ofxOscReceiver::~ofxOscReceiver()
@@ -229,30 +234,25 @@ bool ofxOscReceiver::getParameter(ofAbstractParameter & parameter){
 	if ( messages.size() == 0 ) return false;
 	while(hasWaitingMessages()){
 		ofAbstractParameter * p = &parameter;
-        
-        getNextMessage(&msg);
-        vector<string> address = ofSplitString(msg.getAddress(),"/",true);
-                
-        for(int i=0;i<address.size();i++){
-            
-            if(p) {
-                if(address[i]==p->getEscapedName()){
-                    if(p->type()==typeid(ofParameterGroup).name()){
-                        if(address.size()>=i+1){
-                            p = &static_cast<ofParameterGroup*>(p)->get(address[i+1]);
-                        }
-                    }else if(p->type()==typeid(ofParameter<int>).name() && msg.getArgType(0)==OFXOSC_TYPE_INT32){
-                        p->cast<int>() = msg.getArgAsInt32(0);
-                    }else if(p->type()==typeid(ofParameter<float>).name() && msg.getArgType(0)==OFXOSC_TYPE_FLOAT){
-                        p->cast<float>() = msg.getArgAsFloat(0);
-                    }else if(p->type()==typeid(ofParameter<bool>).name() && msg.getArgType(0)==OFXOSC_TYPE_INT32){
-                        p->cast<bool>() = msg.getArgAsInt32(0);
-                    }else if(msg.getArgType(0)==OFXOSC_TYPE_STRING){
-                        p->fromString(msg.getArgAsString(0));
-                    }
-                }
-            }
-        }
+		getNextMessage(&msg);
+		vector<string> address = ofSplitString(msg.getAddress(),"/",true);
+		for(unsigned int i=0;i<address.size();i++){
+			if(address[i]==p->getName()){
+				if(p->type()==typeid(ofParameterGroup).name()){
+					if(address.size()>=i+1){
+						p = &static_cast<ofParameterGroup*>(p)->get(address[i+1]);
+					}
+				}else if(p->type()==typeid(ofParameter<int>).name() && msg.getArgType(0)==OFXOSC_TYPE_INT32){
+					p->cast<int>() = msg.getArgAsInt32(0);
+				}else if(p->type()==typeid(ofParameter<float>).name() && msg.getArgType(0)==OFXOSC_TYPE_FLOAT){
+					p->cast<float>() = msg.getArgAsFloat(0);
+				}else if(p->type()==typeid(ofParameter<bool>).name() && msg.getArgType(0)==OFXOSC_TYPE_INT32){
+					p->cast<bool>() = msg.getArgAsInt32(0);
+				}else if(msg.getArgType(0)==OFXOSC_TYPE_STRING){
+					p->fromString(msg.getArgAsString(0));
+				}
+			}
+		}
 	}
 	return true;
 }
