@@ -788,3 +788,506 @@ string ofSystemTextBoxDialog(string question, string text){
 
 	return text;
 }
+
+
+
+
+
+///--------------------------------------------------------------------------
+///--------------------------------------------------------------------------
+///TEXTBOX FOR OF
+///--------------------------------------------------------------------------
+///--------------------------------------------------------------------------
+
+
+
+
+
+
+#ifdef TARGET_OSX
+
+
+@interface ofNsWindow : NSWindow
+
+- (BOOL)canBecomeKeyWindow;
+
+@end
+@implementation ofNsWindow{
+    
+}
+- (BOOL)canBecomeKeyWindow {
+    return YES;
+}
+@end
+
+
+struct obj_ofT_{
+public:
+    obj_ofT_( ofNsWindow *wal_,
+             NSView * uiView_,
+             NSTextField *	myTextView_){
+        
+        wal = wal_;
+        uiView = uiView_;
+        myTextView = myTextView_;
+    }
+    ~obj_ofT_(){
+        wal = NULL;
+        uiView = NULL;
+        myTextView = NULL;
+        
+    }
+    ofNsWindow *wal;
+    NSView * uiView;
+    NSTextField *	myTextView;
+    int id;
+    
+};
+int quantity_ofBoxes;
+extern "C" AXError _AXUIElementGetWindow(AXUIElementRef, CGWindowID* out);
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#ifdef TARGET_WIN32
+
+
+
+#define FAKE_WND_CLASS_NAME _T("TranFakeWnd")
+#endif
+
+
+
+
+void ofTextField::create(int x, int y,int w,int h){
+#ifdef TARGET_WIN32
+    memset(&wc, 0, sizeof(wc));
+    int OF_CENTER_POSX_ = 0;
+    int OF_CENTER_POSY_ = 0;
+    
+    const LPCSTR g_szClassName = "myWindowClass\0";
+    
+    wc.cbSize        = sizeof(WNDCLASSEX);
+    wc.style         = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc   = WndProc;
+    wc.cbClsExtra    = 0;
+    wc.cbWndExtra    = 0;
+    wc.hInstance     = GetModuleHandle(0);
+    
+    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
+    wc.lpszMenuName  = NULL;
+    wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
+    wc.hIcon         = NULL;
+    wc.lpszClassName = g_szClassName;
+    
+    wc.hIconSm       = NULL;
+    
+    
+    if(!RegisterClassEx(&wc))
+    {
+        
+        DWORD err=GetLastError();
+        if ((err==ERROR_CLASS_ALREADY_EXISTS)){
+            
+            ;
+            
+        } else {
+			MessageBox(NULL, "Window Registration Failed!\0", "Error!\0",
+                       MB_ICONEXCLAMATION | MB_OK);
+            //	return text;
+		}
+        
+        
+    }
+    
+    
+    RECT rc;
+    HWND dialog = CreateWindowExW(WS_EX_LAYERED | WS_OVERLAPPED,
+                                  convertNarrowToWide(g_szClassName).c_str(),
+                                  convertNarrowToWide(question).c_str(),
+                                  WS_VISIBLE | WS_OVERLAPPED,
+                                  x, y, w, h,
+                                  WindowFromDC(wglGetCurrentDC()), NULL, GetModuleHandle(0),NULL);
+    
+    GetWindowRect ( dialog, &rc ) ;
+    
+    
+    OF_CENTER_POSX_ = (GetSystemMetrics(SM_CXSCREEN) - rc.right)/2;
+    OF_CENTER_POSY_ = (GetSystemMetrics(SM_CYSCREEN) - rc.bottom)/2;
+    
+    
+    if(dialog == NULL)
+    {
+        MessageBox(NULL, "Window Creation Failed!\0", "Error!\0",
+                   MB_ICONEXCLAMATION | MB_OK);
+        //   return text;
+    }
+    
+    
+    wchar_t wstr2[16384]= L"EDIT\0";
+    
+    
+    EnableWindow(WindowFromDC(wglGetCurrentDC()), FALSE);
+    if(isMultiline)
+        hEdit = CreateWindowExW(WS_EX_APPWINDOW, wstr2, convertNarrowToWide(text).c_str(),
+                                WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_MULTILINE |ES_AUTOVSCROLL,
+                                x, y, w, h,WindowFromDC(wglGetCurrentDC()), (HMENU)101, GetModuleHandle(NULL), NULL);
+    else {
+        if(isPassword)
+            hEdit = CreateWindowExW(WS_EX_APPWINDOW, wstr2, convertNarrowToWide(text).c_str(),
+                                    WS_CHILD | WS_VISIBLE | WS_TABSTOP |ES_PASSWORD,
+                                    x, y, w, h,WindowFromDC(wglGetCurrentDC()), (HMENU)101, GetModuleHandle(NULL), NULL);
+        
+        else
+            hEdit = CreateWindowExW(WS_EX_APPWINDOW, wstr2, convertNarrowToWide(text).c_str(),
+                                    WS_CHILD | WS_VISIBLE | WS_TABSTOP ,
+                                    x, y, w, h,WindowFromDC(wglGetCurrentDC()), (HMENU)101, GetModuleHandle(NULL), NULL);
+        
+        
+    }
+    
+    SetFocus( hEdit );
+    
+    ShowWindow(hEdit, SW_SHOWNORMAL);
+    if(showingScrolBar&&isMultiline)
+        ShowScrollBar(hEdit,1,TRUE);
+    
+    bool bFirstEmpty = true;
+    DestroyWindow(dialog);
+    EnableWindow(WindowFromDC(wglGetCurrentDC()), TRUE);
+    SetFocus( WindowFromDC(wglGetCurrentDC()));
+#endif
+    
+    
+#ifdef TARGET_OSX
+    
+    
+    ofNsWindow *wal;
+    NSView* uiView;
+    NSTextField *	myTextView;
+    quantity_ofBoxes++;
+    NSDictionary *info = [[NSBundle mainBundle] infoDictionary];
+    
+    NSString *bundleName = [NSString stringWithFormat:@"%@", [info objectForKey:@"CFBundleExecutable"]];
+    
+    standardAppName = [bundleName UTF8String];
+    
+    NSRect Srect =    [[NSScreen mainScreen] frame];
+    
+    NSRect rect =    NSMakeRect(x,y,w,h);;
+        
+    
+    NSArray * allWindows = [NSApp windows];
+    
+    myTextView = [[[NSTextField alloc] initWithFrame:rect]autorelease];
+    
+    [myTextView setStringValue:[NSString stringWithCString:text.c_str()
+                                                  encoding:NSUTF8StringEncoding]];
+    
+    [myTextView setEnabled: YES];
+    [myTextView setEditable: YES];
+    [myTextView setBezeled:YES];
+    
+    uiView = [[[NSView alloc] initWithFrame:rect]autorelease];
+    uiView.wantsLayer = YES;
+    
+    
+    wal = [[[ofNsWindow alloc]initWithContentRect:rect
+                                        styleMask:NSBorderlessWindowMask
+                                          backing:NSBackingStoreBuffered
+                                            defer:NO]autorelease];
+    
+    
+    
+    
+    [wal setContentView:myTextView];
+    [wal makeFirstResponder:nil];
+    [wal setLevel:NSNormalWindowLevel];
+    [wal makeKeyAndOrderFront:wal];
+    [wal orderFront:NSApp];
+    
+    
+    for(NSWindow * aWindow in allWindows)
+    {
+        //        NSLog(@"%@",aWindow.miniwindowTitle);
+        if([aWindow.miniwindowTitle isEqual: [NSString stringWithCString:standardAppName.c_str()]]){
+            continue;
+        }else{
+            appWindow.size.height = [aWindow frame].size.height;
+            appWindow.size.width =[aWindow frame].size.width;
+            appWindow.origin.x = [aWindow frame].origin.x;
+            appWindow.origin.y =[aWindow frame].origin.y;
+            NSRect rectofT =  NSMakeRect(appWindow.origin.x+x,(appWindow.origin.y+appWindow.size.height)-(y+(h*2)),w,h);
+            [wal setFrame:rectofT display:YES];
+            [aWindow addChildWindow:wal ordered:NSWindowAbove];
+            pointerToWindow = aWindow;
+        }
+    }
+    
+    
+    
+    
+    pointer = new obj_ofT_(wal,uiView,myTextView);
+    
+    
+    
+    
+    
+    //  NSLog(@"%@",allWindows);
+    
+#endif
+    
+}
+ofTextField::ofTextField(){
+    isCreated = false;
+    posX=0,posY=0,width=0,height=0;
+    showingScrolBar=false;
+    isMultiline=false;
+    isPassword =false;
+    isHiding =false;
+    isDrawing = true;
+    pointerToWindow = NULL;
+}
+ofTextField::  ~ofTextField(){
+    if(isCreated){
+#ifdef TARGET_WIN32
+        DestroyWindow(hEdit);
+#endif
+#ifdef TARGET_OSX
+        
+        
+        delete pointer;
+        pointerToWindow =NULL;
+#endif
+    }
+    
+    
+}
+
+bool ofTextField::activeApp(){
+    bool isactive=false;
+#ifdef TARGET_OSX
+    
+    //get if of App is in focus (selected) (thought it might be usefull in some cases
+    
+    
+    NSDictionary *activeApp = [[NSWorkspace sharedWorkspace] activeApplication];
+    
+    
+    
+    if([(NSString *)[activeApp objectForKey:@"NSApplicationName"]isEqual:[NSString stringWithCString:standardAppName.c_str()]]){
+        
+        isactive = true;
+        
+        
+        
+        
+    }else{
+        
+        isactive =false;
+        
+    }
+    
+    
+    
+#endif
+    /*
+     add pc part of code
+     
+     */
+    return isactive;
+    
+    
+}
+
+void ofTextField::draw(int x, int y,int w,int h){
+    
+    if(!isCreated){
+        create(x,y,w,h);
+        isCreated=true;
+    }else{
+        isDrawing=true;
+        bool rePosisionTheTextBox = false;
+#ifdef TARGET_OSX
+        NSWindow * aWindow = (NSWindow *)pointerToWindow;
+        if([aWindow frame].size.width!=appWindow.size.width||[aWindow frame].size.height!=appWindow.size.height)rePosisionTheTextBox=true;
+        
+#endif
+        
+        if(x!=posX||y!=posY||w!=width||h!=height||rePosisionTheTextBox){
+#ifdef TARGET_WIN32
+            SetWindowPos( hEdit, 0,  x, y, w, h, SWP_NOZORDER  );
+#endif
+            
+#ifdef TARGET_OSX
+            
+                    appWindow.size.height = [aWindow frame].size.height;
+                    appWindow.size.width =[aWindow frame].size.width;
+                    appWindow.origin.x = [aWindow frame].origin.x;
+                    appWindow.origin.y =[aWindow frame].origin.y;
+         
+            
+            
+            NSRect Srect =    [[NSScreen mainScreen] frame];
+           // int Ypss = y+appWindow.origin.y;
+            //int Xpss = x+appWindow.origin.x;
+            
+         //   Ypss = Srect.size.height;
+            
+          //  Ypss -=y;
+           // Ypss -=h*2;
+            
+            //NSRect rect =    NSMakeRect(x,y,w,h);
+            NSRect rectofT =  NSMakeRect(appWindow.origin.x+x,(appWindow.origin.y+appWindow.size.height)-(y+(h*2)),w,h);
+
+             [pointer->wal setFrame:rectofT display:!isHiding animate:NO];
+             [aWindow setMinSize:NSMakeSize(x+w, h+y+h)];
+            //hide();
+#endif
+            posX=x,posY=y,width=w,height=h;
+            
+        }
+    }
+    
+}
+
+string ofTextField::getText(){
+#ifdef TARGET_WIN32
+    wchar_t wstr[16384];
+    GetWindowTextW( hEdit, wstr, 16384 );
+    char mbstr2[16384];
+    
+    WideCharToMultiByte(CP_UTF8,0,wstr,16384,mbstr2,16384,NULL,NULL);
+    text = mbstr2;
+#endif
+#ifdef TARGET_OSX
+    
+    text = [[pointer->myTextView stringValue] UTF8String];
+    
+#endif
+    
+    return text;
+    
+}
+bool ofTextField::showScrollBar(bool showing){
+#ifdef TARGET_WIN32
+    ShowScrollBar(hEdit,101,showingScrolBar);
+#endif
+    showingScrolBar = showing;
+    return showingScrolBar;
+    
+    /*add scroll for mac version
+     we need to use
+     NSTextView
+     but it's not as goodlooking
+     
+     */
+    
+}
+bool ofTextField::setMultiline(bool multln){
+#ifdef TARGET_WIN32
+    showScrollBar(multln);
+    
+#endif
+#ifdef TARGET_OSX
+    
+    //code needed
+#endif
+    
+    isMultiline = multln;
+    return isMultiline;
+}
+
+void ofTextField::hide()
+{    isHiding = true;
+    
+#ifdef TARGET_WIN32
+    
+    ShowWindow(hEdit, SW_HIDE);
+    EnableWindow(hEdit,false);
+#endif
+    
+#ifdef TARGET_OSX
+    [pointer->wal setIsVisible:NO];
+    //code needed
+#endif
+    
+    
+}
+bool ofTextField::getIsHiding(){
+    return isHiding;
+}
+void ofTextField::show()
+{
+    isHiding = false;
+    
+#ifdef TARGET_WIN32
+    
+    ShowWindow(hEdit, SW_SHOWNORMAL);
+    EnableWindow(hEdit,true);
+#endif
+    
+#ifdef TARGET_OSX
+    [pointer->wal setIsVisible:YES];
+    
+    //code needed
+#endif
+    
+    
+}
+bool ofTextField::setPassWordMode(bool passwrdmd ){
+    
+    isPassword= passwrdmd;
+    
+    return isPassword;
+}
+void ofTextField::clearText(string dtext){
+    
+#ifdef TARGET_WIN32
+    
+    SetWindowTextW(hEdit,L"");
+#endif
+#ifdef TARGET_OSX
+    
+    //code needed
+#endif
+    
+    
+}
+
+
+///this is the weird part of the code
+//since this textbox is drawing above openGL
+//you might want to use this function to figure out
+//how to hide it when you don't want it.
+void ofTextField::hideIfNotDrawing(){
+#ifdef TARGET_WIN32
+    
+    if(!isDrawing)hide();
+    if(isDrawing){
+        
+        isDrawing=false;
+    }
+#endif
+    
+#ifdef TARGET_OSX
+    
+    //code needed
+#endif
+    
+    
+}
+
+
