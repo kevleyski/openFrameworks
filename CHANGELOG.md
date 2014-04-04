@@ -1,14 +1,41 @@
 OF 0.8.2
 ========
+ 
+#### change key  
+	  + added  
+	  - removed  
+	  / modified  
+
+------------------------------------------------------------------------------
 
 CORE
 ----
 ### 3d
 	/ fix of3DPrimitive copy constructor not copying node
+	
+### app
+	+ ofAppEGLWindow added new methods hasMouse()/hasKeyboard() to provide info on whether mouse/keyboard were detected
+	+ ofAppEGLWindow has new method setThreadTimeout allowing adjustable wait time for the thread to join
+
+### Utils
+	/ ofThread now uses Class name for logging channel (was thread name)
+	
+PLATFORM SPECIFIC
+-----------------
+### Android
+	/ fix package generation, was missing paths.make
+
 
 
 OF 0.8.1
 ========
+ 
+#### change key  
+	  + added  
+	  - removed  
+	  / modified  
+
+------------------------------------------------------------------------------
 
 ```
 _____/\\\\\\\______________/\\\\\\\\\_______________/\\\_        
